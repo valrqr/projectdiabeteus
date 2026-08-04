@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Données brutes."
+    schema: projectdiabeteus_Dataset_Original_Diabete
+    database: projectdiabeteus
+    tables:
+      - name: diabetic_data
+        description: "Données Diabetes 130-US Hospitals, issuent du UCI Machine Learning Repository. Table de faits."
+      - name: Diagnostic_Codes
+        description: "Correspondances entre un code diagnostique ICD-9, sa description et sa catégorie (généré par Claude). Table de dimension."
+      - name: Medical_Specialty_Mapping
+        description: "Correspondances entre une spécialité médicale et sa catégorie (généré par Claude). Table de dimension."
+      - name: sorties
+        description: "Decsription des codes de sortie de la table des faits (discharge_disposition_id). Table de dimension."
+      - name: sources_admissions
+        description: "Description des codes de source d'admission de la table des faits (admission_source_id). Table de dimension."
+      - name: types_admissions
+        description: "Description des codes de type d'admission de la table des faits (admission_type_id). Table de dimension."
