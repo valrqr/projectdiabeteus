@@ -1,0 +1,220 @@
+version: 2
+
+models:
+  - name: stg_hospitalisations
+    description: "Renommage des colonnes, suppression des colonnes inutilisées, suppression des colonnes relatives aux patients (à part l'identifiant), formatage de la colonne readmis, remplacement des valeurs 15 par 9 dans source_admission_id (cette ligne était dupliquée), calcul du nombre de changements de posologie."
+    columns:
+      - name: hospitalisation_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: patient_id
+        description: "Clef étrangère."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_patients')
+              field: patient_id
+      - name: type_admission_id
+        description: "Clef étrangère."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_types_admissions')
+              field: type_admission_id
+      - name: sortie_id
+        description: "Clef étrangère."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_sorties')
+              field: sortie_id
+      - name: source_admission_id
+        description: "Clef étrangère."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_sources_admissions')
+              field: source_admission_id
+      - name: tranche_age
+        description: "Tranche d'age du patient lors de sa visite. Format: [<>-<>)."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['[0-10)', '[10-20)', '[20-30)', '[30-40)', '[40-50)', '[50-60)', '[60-70)', '[70-80)', '[80-90)', '[90-100)']
+      - name: duree
+        description: "Durée de l'hospitalisation en jours."
+        tests:
+          - not_null
+      - name: specialite_medecin
+        description: "Spécialité du médecin responsable du patient."
+        tests:
+          - not_null
+      - name: n_test_lab
+        description: "Nombre de tests réalisés au laboratoire pour le patient."
+        tests:
+          - not_null
+      - name: n_procedure
+        description: "Nombre de procédures réalisés pour le patient."
+        tests:
+          - not_null
+      - name: n_medicament
+        description: "Nombre de médicaments donnés au patient."
+        tests:
+          - not_null
+      - name: n_visite_externe
+        description: "Nombre de visites externes du patient dans l'année précédant la rencontre."
+        tests:
+          - not_null
+      - name: n_visite_urgence
+        description: "Nombre de visites d'urgence du patient dans l'année précédant la rencontre."
+        tests:
+          - not_null
+      - name: n_visite_hopital
+        description: "Nombre de visites hospitalières du patient dans l'année précédant la rencontre."
+        tests:
+          - not_null
+      - name: n_diag
+        description: "Nombre de diagnostics lors de l'hospitalisation."
+        tests:
+          - not_null
+      - name: insulin
+        description: "Indique si le médicament a été prescrit ou s'il y a eu un changement de posologie."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['No', 'Steady', 'Up', 'Down']
+      - name: n_changement_posologie
+        description: "Nombre de changementd e posologie (changement de dose ou nouveau médicament)."
+        tests:
+          - not_null
+      - name: readmis
+        description: "Le patient est-il réadmis à l'hôpital en moins de 30 jours?"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+  - name: stg_patients
+    columns:
+      - name: patient_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: ethnie
+        description: "Ethnie du patient."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['AfricanAmerican', 'Asian', 'Caucasian', 'Hispanic', 'Other', '?']
+      - name: genre
+        description: "Genre du patient."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Female', 'Male', '?']
+  - name: stg_specialites_medicales
+    columns:
+      - name: specialite_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: specialite
+        description: "Titre de la specialité médicale."
+        tests:
+          - not_null
+      - name: categorie
+        description: "Catégorie générale de la specialité médicale."
+        tests:
+          - not_null
+  - name: stg_icd9
+    columns:
+      - name: icd9_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: description
+        description: "Description du diagnostique."
+        tests:
+          - not_null
+      - name: categorie
+        description: "Catégorie générale du diagnostique."
+        tests:
+          - not_null
+  - name: stg_diagnostiques
+    data_tests:
+      - unique:
+          arguments: # available in v1.10.5 and higher. Older versions can set the <argument_name> as the top-level property.
+            column_name: "(hospitalisation_id || '-' || icd9_id)"
+    columns:
+      - name: hospitalisation_id
+        description: "Clef primaire composite."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_hospitalisations')
+              field: hospitalisation_id
+      - name: icd9_id
+        description: "Clef primaire composite."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_icd9')
+              field: icd9_id
+  - name: stg_types_admissions
+    columns:
+      - name: type_admission_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: description
+        description: "Description du type d'admission."
+        tests:
+          - not_null
+          - unique
+      - name: categorie
+        description: "Catégorie générale du type d'admission."
+        tests:
+          - not_null
+  - name: stg_sorties
+    columns:
+      - name: sortie_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: description
+        description: "Description du type de sortie."
+        tests:
+          - not_null
+          - unique
+      - name: categorie
+        description: "Catégorie générale du type de sortie."
+        tests:
+          - not_null
+  - name: stg_sources_admissions
+    columns:
+      - name: source_admission_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: description
+        description: "Description de la source d'admission."
+        tests:
+          - not_null
+          - unique
+      - name: categorie
+        description: "Catégorie générale de la source d'admission."
+        tests:
+          - not_null

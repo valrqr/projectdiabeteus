@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw_diabetic_data
+    dataset: projectdiabeteus_Dataset_Original_Diabete
+    tables:
+      - name: diabetic_data
+        columns:
+          - name: weight
+            description: "Exclue du staging - trop de valeurs manquantes"
+          - name: payer_code
+            description: "Exclue du staging - trop de valeurs manquantes"
+      - name: sorties
+      - name: sources_admissions
+      - name: types_admissions
+      - name: Diagnostic_Codes
+      - name: Medical_Specialty_Mapping 
