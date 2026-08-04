@@ -1,0 +1,194 @@
+version: 2
+
+models:
+
+  - name: stg_diabetic_data
+    description: >
+      Table de staging des données patients/hospitalisations issues de la source brute
+      diabetic_data. Cast des colonnes numériques en int64, normalisation des colonnes
+      textuelles (via la macro normalisation_outcasts), remapping des id de type/source
+      d'admission, et dédoublonnage ethnie/genre par patient.
+    columns:
+      - name: hospitalisation_id
+        description: "Clef primaire"
+        tests:
+          - not_null
+          - unique
+      - name: patient_id
+        description: "Clef étrangère"
+        tests:
+          - not_null
+      - name: type_admission_id
+        description: "Clef étrangère remappé (5/6/8 -> 5, 7 -> 6) pour fusionner
+          les catégories équivalentes."
+        tests:
+          - relationships:
+              to: ref('stg_types_admissions')
+              field: type_admission_id
+      - name: sortie_id
+        description: "Clef étrangère"
+        tests:  
+          - relationships:
+              to: ref('stg_sorties')
+              field: sortie_id
+      - name: source_admission_id
+        description: "Clef étrangère, remappé (15 -> 9) pour corriger un doublon
+          dans la table brute."
+        tests:
+          - relationships:
+              to: ref('stg_sources_admissions')
+              field: source_admission_id
+      - name: duree
+        description: Durée du séjour hospitalier (en jours).
+      - name: n_test_lab
+        description: Nombre de tests de laboratoire réalisés.
+      - name: n_procedure
+        description: Nombre de procédures médicales réalisées.
+      - name: n_medicament
+        description: Nombre de médicaments administrés.
+      - name: n_visite_externe
+        description: Nombre de visites en ambulatoire dans l'année précédant l'hospitalisation.
+      - name: n_visite_urgence
+        description: Nombre de visites aux urgences dans l'année précédant l'hospitalisation.
+      - name: n_visite_hospitaliere
+        description: Nombre d'hospitalisations dans l'année précédant l'admission actuelle.
+      - name: n_diagnostic
+        description: Nombre de diagnostics enregistrés lors de l'hospitalisation.
+      - name: tranche_age
+        description: Tranche d'âge du patient.
+      - name: specialite_medecin
+        description: Spécialité médicale du médecin admetteur.
+      - name: examide
+        description: Statut du traitement Examide.
+      - name: acarbose
+        description: Statut du traitement Acarbose.
+      - name: miglitol
+        description: Statut du traitement Miglitol.
+      - name: glipizide
+        description: Statut du traitement Glipizide.
+      - name: glyburide
+        description: Statut du traitement Glyburide.
+      - name: metformin
+        description: Statut du traitement Metformin.
+      - name: tolazamide
+        description: Statut du traitement Tolazamide.
+      - name: citoglipton
+        description: Statut du traitement Citoglipton.
+      - name: glimepiride
+        description: Statut du traitement Glimepiride.
+      - name: nateglinide
+        description: Statut du traitement Nateglinide.
+      - name: repaglinide
+        description: Statut du traitement Repaglinide.
+      - name: tolbutamide
+        description: Statut du traitement Tolbutamide.
+      - name: pioglitazone
+        description: Statut du traitement Pioglitazone.
+      - name: troglitazone
+        description: Statut du traitement Troglitazone.
+      - name: acetohexamide
+        description: Statut du traitement Acetohexamide.
+      - name: rosiglitazone
+        description: Statut du traitement Rosiglitazone.
+      - name: chlorpropamide
+        description: Statut du traitement Chlorpropamide.
+      - name: glipizide_metformin
+        description: Statut du traitement combiné Glipizide-Metformin.
+      - name: glyburide_metformin
+        description: Statut du traitement combiné Glyburide-Metformin.
+      - name: metformin_pioglitazone
+        description: Statut du traitement combiné Metformin-Pioglitazone.
+      - name: metformin_rosiglitazone
+        description: Statut du traitement combiné Metformin-Rosiglitazone.
+      - name: glimepiride_pioglitazone
+        description: Statut du traitement combiné Glimepiride-Pioglitazone.
+      - name: insulin
+        description: Statut du traitement Insuline.
+      - name: diag_1
+        description: Code diagnostic 1.
+      - name: diag_2
+        description: Code diagnostic 2.
+      - name: diag_3
+        description: Code diagnostic 3.
+      - name: a1c_result
+        description: Résultat du test A1C.
+      - name: readmitted
+        description: Statut de réadmission du patient.
+      - name: change
+        description: Indicateur de changement de traitement diabétique.
+      - name: diabetesMed
+        description: Indicateur de prescription d'un médicament antidiabétique.
+      - name: ethnie
+        description: >
+          Ethnie du patient. Forcée à '?' si plusieurs valeurs différentes sont enregistrées
+          pour un même patient sur ses différentes hospitalisations.
+      - name: genre
+        description: >
+          Genre du patient. Forcé à '?' si plusieurs valeurs différentes sont enregistrées
+          pour un même patient sur ses différentes hospitalisations.
+
+  - name: stg_icd9
+    description: Table de staging des codes diagnostics ICD9 et de leur catégorie.
+    columns:
+      - name: icd9_id
+        description: Code diagnostic ICD9, clef primaire.
+        tests:
+          - not_null
+          - unique
+      - name: description
+        description: Description textuelle du diagnostic.
+      - name: categorie
+        description: Catégorie générale du diagnostic.
+
+  - name: stg_sorties
+    description: Table de staging des libellés de type de sortie d'hospitalisation.
+    columns:
+      - name: sortie_id
+        description: clef primaire.
+        tests:
+          - not_null
+          - unique
+      - name: libelle_sortie
+        description: Libellé décrivant le type de sortie d'hospitalisation.
+
+  - name: stg_sources_admissions
+    description: Table de staging des libellés de source d'admission.
+    columns:
+      - name: source_admission_id
+        description: clef primaire.
+        tests:
+          - not_null
+          - unique
+      - name: libelle_admission_source
+        description: Libellé décrivant la source d'admission.
+
+  - name: stg_specialites_medicales
+    description: >
+      Table de staging du mapping entre les spécialités médicales brutes et leur
+      catégorie générale, avec génération d'un identifiant séquentiel.
+    columns:
+      - name: specialite_id
+        description: clef primaire générée (row_number).
+        tests:
+          - not_null
+          - unique
+      - name: specialite
+        description: Libellé original de la spécialité médicale.
+      - name: categorie
+        description: Catégorie générale associée à la spécialité médicale.
+
+  - name: stg_types_admissions
+    description: >
+      Table de staging des libellés de type d'admission, remappée (5/6/8 -> 5, 7 -> 6)
+      pour correspondre au remapping appliqué dans stg_diabetic_data, avec valeurs
+      manquantes normalisées en 'Unknown'.
+    columns:
+      - name: type_admission_id
+        description: clef primaire.
+        tests:
+          - not_null
+          - unique
+      - name: libelle_admission_type
+        description: >
+          Libellé décrivant le type d'admission. 'Not Available', 'NULL' et 'Not Mapped'
+          sont normalisés en 'Unknown'.

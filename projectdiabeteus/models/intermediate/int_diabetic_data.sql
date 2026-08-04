@@ -15,17 +15,9 @@ specialites as (
 enriched as (
 
     select
-        staging.* except (insulin, specialite_medecin),
+        staging.* except (specialite_medecin),
 
         specialites.specialite_id,
-
-        --traduction des valeurs de la colonne insulin
-        case
-            when insulin = 'Up' then 'augmentation'
-            when insulin = 'Down' then 'reduction'
-            when insulin = 'Steady' then 'stable'
-            when insulin = 'No' then 'Non'
-        end as insulin,
 
         -- création de la colonne n_changement_traitement_diabete qui va compter les changements de traitements indiqués par Up et Down dans les colonnes médicaments
         (

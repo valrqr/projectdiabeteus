@@ -1,0 +1,181 @@
+version: 2
+
+models:
+
+  - name: dim_icd9
+    description: Dimension des codes diagnostics ICD9 et de leur catégorie.
+    columns:
+      - name: icd9_id
+        description: Code diagnostic ICD9.
+        tests:
+          - not_null
+          - unique
+      - name: description
+        description: Description textuelle du diagnostic.
+      - name: categorie
+        description: Catégorie générale du diagnostic.
+
+  - name: dim_patients
+    description: >
+      Dimension des patients, dédupliquée sur patient_id à partir de stg_diabetic_data
+      (un patient peut avoir plusieurs hospitalisations mais une seule ligne ici).
+    columns:
+      - name: patient_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: ethnie
+        description: >
+          Ethnie du patient, dédoublonnée en amont (mise à '?' si plusieurs valeurs
+          différentes enregistrées pour ce patient).
+      - name: genre
+        description: >
+          Genre du patient, dédoublonné en amont (mis à '?' si plusieurs valeurs
+          différentes enregistrées pour ce patient).
+
+  - name: dim_sorties
+    description: Dimension des types de sortie d'hospitalisation.
+    columns:
+      - name: sortie_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: libelle_sortie
+        description: Libellé décrivant le type de sortie d'hospitalisation.
+
+  - name: dim_sources_admissions
+    description: Dimension des sources d'admission.
+    columns:
+      - name: source_admission_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: libelle_admission_source
+        description: Libellé décrivant la source d'admission.
+
+  - name: dim_specialites_medicales
+    description: Dimension des spécialités médicales et de leur catégorie générale.
+    columns:
+      - name: specialite_id
+        description: "Clef primaire généré pour chaque spécialité médicale."
+        tests:
+          - not_null
+          - unique
+      - name: specialite
+        description: Libellé original de la spécialité médicale.
+      - name: categorie
+        description: Catégorie générale associée à la spécialité médicale.
+
+  - name: dim_types_admissions
+    description: Dimension des types d'admission (remappés).
+    columns:
+      - name: type_admission_id
+        description: "Clef primaire (remappé)."
+        tests:
+          - not_null
+          - unique
+      - name: libelle_admission_type
+        description: >
+          Libellé décrivant le type d'admission. 'Not Available', 'NULL' et 'Not Mapped'
+          sont normalisés en 'Unknown'.
+
+  - name: fact_hospitalisations
+    description: >
+      Table de faits au grain de l'hospitalisation, issue de int_diabetic_data. Contient
+      les clés étrangères vers les dimensions et les mesures/indicateurs liés au séjour et
+      au traitement diabétique.
+    columns:
+      - name: hospitalisation_id
+        description: "Clef primaire."
+        tests:
+          - not_null
+          - unique
+      - name: patient_id
+        description: Clé étrangère vers dim_patients.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_patients')
+              field: patient_id
+      - name: type_admission_id
+        description: Clé étrangère vers dim_types_admissions.
+        tests:
+          - relationships:
+              to: ref('dim_types_admissions')
+              field: type_admission_id
+      - name: sortie_id
+        description: Clé étrangère vers dim_sorties.
+        tests:
+          - relationships:
+              to: ref('dim_sorties')
+              field: sortie_id
+      - name: specialite_id
+        description: Clé étrangère vers dim_specialites_medicales.
+        tests:
+          - relationships:
+              to: ref('dim_specialites_medicales')
+              field: specialite_id
+      - name: source_admission_id
+        description: Clé étrangère vers dim_sources_admissions.
+        tests:
+          - relationships:
+              to: ref('dim_sources_admissions')
+              field: source_admission_id
+      - name: tranche_age
+        description: Tranche d'âge du patient.
+      - name: duree
+        description: Durée du séjour hospitalier (en jours).
+      - name: n_test_lab
+        description: Nombre de tests de laboratoire réalisés.
+      - name: n_procedure
+        description: Nombre de procédures médicales réalisées.
+      - name: n_medicament
+        description: Nombre de médicaments administrés.
+      - name: n_visite_externe
+        description: Nombre de visites en ambulatoire dans l'année précédant l'hospitalisation.
+      - name: n_visite_hospitaliere
+        description: Nombre d'hospitalisations dans l'année précédant l'admission actuelle.
+      - name: n_visite_urgence
+        description: Nombre de visites aux urgences dans l'année précédant l'hospitalisation.
+      - name: n_diagnostic
+        description: Nombre de diagnostics enregistrés lors de l'hospitalisation.
+      - name: insulin
+        description: >
+          Statut du traitement à l'insuline.
+        tests:
+          - accepted_values:
+              values: ['Up', 'Down', 'Steady', 'No']
+      - name: n_changement_traitement_diabete
+        description: >
+          Nombre de traitements antidiabétiques ayant été augmentés ou diminués
+          lors de l'hospitalisation.
+      - name: readmis
+        description: >
+          Variable cible booléenne : true si le patient a été réadmis en moins de
+          30 jours, false sinon.
+
+  - name: jonction_diagnostiques
+    description: >
+      Table de jonction (bridge) entre fact_hospitalisations et dim_icd9 : une ligne par
+      couple hospitalisation/diagnostic, issue de l'empilement (union all) des colonnes
+      diag_1, diag_2 et diag_3 de stg_diabetic_data. Les diagnostics nuls sont exclus.
+    columns:
+      - name: hospitalisation_id
+        description: Clé étrangère vers fact_hospitalisations. Non unique seule (plusieurs diagnostics possibles par hospitalisation).
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_hospitalisations')
+              field: hospitalisation_id
+      - name: icd9_id
+        description: >
+          Code diagnostic ICD9 (issu de diag_1, diag_2 ou diag_3). Clé étrangère vers
+          dim_icd9. Non unique seule (plusieurs hospitalisations possibles par diagnostic).
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_icd9')
+              field: icd9_id

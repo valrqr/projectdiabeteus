@@ -1,0 +1,143 @@
+version: 2
+
+models:
+
+  - name: int_diabetic_data
+    description: >
+      jointure avec stg_specialites_medicales pour
+      récupérer specialite_id, calcul du
+      nombre de changements de traitement diabétique (n_changement_traitement_diabete) et
+      création de la variable cible booléenne readmis à partir de readmitted.
+    columns:
+      - name: hospitalisation_id
+        description: "Clef primaire"
+        tests:
+          - not_null
+          - unique
+      - name: patient_id
+        description: "Clef étrangère"
+        tests:
+          - not_null
+      - name: type_admission_id
+        description: "Clef étrangère"
+        tests:
+          - relationships:
+              to: ref('stg_types_admissions')
+              field: type_admission_id
+      - name: sortie_id
+        description: "Clef étrangère"
+        tests:
+          - relationships:
+              to: ref('stg_sorties')
+              field: sortie_id
+      - name: source_admission_id
+        description: "Clef étrangère"
+        tests:
+          - relationships:
+              to: ref('stg_sources_admissions')
+              field: source_admission_id
+      - name: duree
+        description: Durée du séjour hospitalier (en jours).
+      - name: n_test_lab
+        description: Nombre de tests de laboratoire réalisés.
+      - name: n_procedure
+        description: Nombre de procédures médicales réalisées.
+      - name: n_medicament
+        description: Nombre de médicaments administrés.
+      - name: n_visite_externe
+        description: Nombre de visites en ambulatoire dans l'année précédant l'hospitalisation.
+      - name: n_visite_urgence
+        description: Nombre de visites aux urgences dans l'année précédant l'hospitalisation.
+      - name: n_visite_hospitaliere
+        description: Nombre d'hospitalisations dans l'année précédant l'admission actuelle.
+      - name: n_diagnostic
+        description: Nombre de diagnostics enregistrés lors de l'hospitalisation.
+      - name: tranche_age
+        description: Tranche d'âge du patient.
+      - name: examide
+        description: Statut du traitement Examide.
+      - name: acarbose
+        description: Statut du traitement Acarbose.
+      - name: miglitol
+        description: Statut du traitement Miglitol.
+      - name: glipizide
+        description: Statut du traitement Glipizide.
+      - name: glyburide
+        description: Statut du traitement Glyburide.
+      - name: metformin
+        description: Statut du traitement Metformin.
+      - name: tolazamide
+        description: Statut du traitement Tolazamide.
+      - name: citoglipton
+        description: Statut du traitement Citoglipton.
+      - name: glimepiride
+        description: Statut du traitement Glimepiride.
+      - name: nateglinide
+        description: Statut du traitement Nateglinide.
+      - name: repaglinide
+        description: Statut du traitement Repaglinide.
+      - name: tolbutamide
+        description: Statut du traitement Tolbutamide.
+      - name: pioglitazone
+        description: Statut du traitement Pioglitazone.
+      - name: troglitazone
+        description: Statut du traitement Troglitazone.
+      - name: acetohexamide
+        description: Statut du traitement Acetohexamide.
+      - name: rosiglitazone
+        description: Statut du traitement Rosiglitazone.
+      - name: chlorpropamide
+        description: Statut du traitement Chlorpropamide.
+      - name: glipizide_metformin
+        description: Statut du traitement combiné Glipizide-Metformin.
+      - name: glyburide_metformin
+        description: Statut du traitement combiné Glyburide-Metformin.
+      - name: metformin_pioglitazone
+        description: Statut du traitement combiné Metformin-Pioglitazone.
+      - name: metformin_rosiglitazone
+        description: Statut du traitement combiné Metformin-Rosiglitazone.
+      - name: glimepiride_pioglitazone
+        description: Statut du traitement combiné Glimepiride-Pioglitazone.
+      - name: diag_1
+        description: Code diagnostic 1.
+      - name: diag_2
+        description: Code diagnostic 2.
+      - name: diag_3
+        description: Code diagnostic 3.
+      - name: a1c_result
+        description: Résultat du test A1C.
+      - name: readmitted
+        description: Statut de réadmission brut du patient, source de la colonne readmis.
+      - name: change
+        description: Indicateur de changement de traitement diabétique.
+      - name: diabetesMed
+        description: Indicateur de prescription d'un médicament antidiabétique.
+      - name: ethnie
+        description: Ethnie du patient, dédoublonnée par patient (hérité de stg_diabetic_data).
+      - name: genre
+        description: Genre du patient, dédoublonné par patient (hérité de stg_diabetic_data).
+      - name: specialite_id
+        description: >
+          Identifiant de la spécialité médicale, récupéré par jointure entre
+          specialite_medecin (staging) et specialite (stg_specialites_medicales).
+        tests:
+          - relationships:
+              to: ref('stg_specialites_medicales')
+              field: specialite_id
+      - name: insulin
+        description: >
+          Statut du traitement à l'insuline
+        tests:
+          - accepted_values:
+              values: ['Up', 'Down', 'Steady', 'No']
+      - name: n_changement_traitement_diabete
+        description: >
+          Nombre de traitements antidiabétiques (parmi les 21 médicaments/combinaisons suivis)
+          ayant été augmentés ou diminués ('Up'/'Down') lors de l'hospitalisation.
+        tests:
+          - not_null
+      - name: readmis
+        description: >
+          Variable cible booléenne : true si le patient a été réadmis en moins de 30 jours
+          (readmitted = '<30'), false si non réadmis ou réadmis après plus de 30 jours
+          (readmitted = 'NO' ou '>30').
