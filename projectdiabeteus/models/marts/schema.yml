@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: hospitalisations
+    description: "Création de l'identifiant unique specialite_id comme clef étrangère de specilites_medicales."
+    columns:
+      - name: specialite_id
+        description: "Clef étrangère."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('specialites_medicales')
+              field: specialite_id
