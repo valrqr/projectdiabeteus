@@ -1,0 +1,13 @@
+# Secrets & credentials
+.env
+*.json
+profiles.yml
+
+# Airflow runtime
+logs/
+plugins/__pycache__/
+dags/__pycache__/
+*.pyc
+
+# Docker
+.DS_Store
