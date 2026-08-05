@@ -7,7 +7,7 @@ client = bigquery.Client(project='projectdiabeteus')
 
 f_query = "SELECT * FROM `projectdiabeteus.dbt_shared.{}`"
 d_df = {}
-for table in ["patients", "hospitalisations", "icd9", "diagnostiques", "sorties", "sources_admissions", "specialites_medicales"]:
+for table in ["patients", "hospitalisations", "icd9", "diagnostiques", "sorties", "sources_admissions", "specialites_medicales", "types_admissions"]:
     d_df[table] = client.query(f_query.format(table)).to_dataframe()
 
 ####################################################
@@ -25,6 +25,7 @@ df = (d_df["hospitalisations"]
     .merge(d_df["sorties"], on="sortie_id", how="left", suffixes=("", "_sortie"))
     .merge(d_df["sources_admissions"], on="source_admission_id", how="left", suffixes=("", "_source_admission"))
     .merge(d_df["specialites_medicales"], on="specialite_id", how="left", suffixes=("", "_specialite"))
+    .merge(d_df["types_admissions"], on="type_admission_id", how="left", suffixes=("", "_type_admission"))
     .merge(d_diag, on="hospitalisation_id", how="left")
     .rename({"description": "description_sortie", "categorie": "categorie_sortie"}, axis=1)
     .fillna("?"))
